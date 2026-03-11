@@ -12,6 +12,7 @@ import urllib.parse
 import uuid
 
 from .common import InfoExtractor, SearchInfoExtractor
+from .xml2ass import XML2ASSConverter
 from ..dependencies import Cryptodome
 from ..networking.exceptions import HTTPError
 from ..utils import (
@@ -188,26 +189,54 @@ class BilibiliBaseIE(InfoExtractor):
         return srt_data
 
     def _get_subtitles(self, video_id, cid, aid=None):
-        subtitles = {
-            'danmaku': [{
-                'ext': 'xml',
-                'url': f'https://comment.bilibili.com/{cid}.xml',
-            }],
-        }
+        subtitles = {}
 
         video_info = self._download_json(
             'https://api.bilibili.com/x/player/wbi/v2', video_id,
             query={'aid': aid, 'cid': cid} if aid else {'bvid': video_id, 'cid': cid},
             note=f'Extracting subtitle info {cid}', headers=self._HEADERS)
+
         if traverse_obj(video_info, ('data', 'need_login_subtitle')):
             self.report_warning(
                 f'Subtitles are only available when logged in. {self._login_hint()}', only_once=True)
+
         for s in traverse_obj(video_info, (
                 'data', 'subtitle', 'subtitles', lambda _, v: v['subtitle_url'] and v['lan'])):
             subtitles.setdefault(s['lan'], []).append({
                 'ext': 'srt',
                 'data': self.json2srt(self._download_json(s['subtitle_url'], video_id)),
             })
+
+        danmaku_url = f'https://comment.bilibili.com/{cid}.xml'
+        danmaku_xml = self._download_webpage(
+            danmaku_url, video_id,
+            note='Downloading danmaku',
+            fatal=False,
+            errnote='Danmaku download failed')
+
+        if danmaku_xml:
+            video_width = traverse_obj(video_info, ('data', 'video_data', 'width')) or 1920
+            video_height = traverse_obj(video_info, ('data', 'video_data', 'height')) or 1080
+
+            converter = XML2ASSConverter(
+                width=video_width,
+                height=video_height,
+                bottom_reserved=int(video_height * 0.20),
+                font_name='Noto Sans CJK SC',
+                font_size=40.0,
+                alpha=0.8,
+                duration_marquee=15.0,
+                duration_still=5.0,
+            )
+
+            ass_data = converter.convert(danmaku_xml)
+
+            if ass_data:
+                subtitles['danmaku'] = [{
+                    'ext': 'ass',
+                    'data': ass_data,
+                }]
+
         return subtitles
 
     def _get_chapters(self, aid, cid):
@@ -253,7 +282,7 @@ class BilibiliBaseIE(InfoExtractor):
         for entry in traverse_obj(season_info, (
                 'result', 'main_section', 'episodes',
                 lambda _, v: url_or_none(v['share_url']) and v['id'])):
-            yield self.url_result(entry['share_url'], BiliBiliBangumiIE, str_or_none(entry.get('id')))
+            yield self.url_result(entry['share_url'], BiliBiliBangumiIE, str_or_none(entry.get('id')), str_or_none(entry.get('long_title') or entry.get('title')))  # videotitle
 
     def _get_divisions(self, video_id, graph_version, edges, edge_id, cid_edges=None):
         cid_edges = cid_edges or {}
@@ -709,9 +738,9 @@ class BiliBiliIE(BilibiliBaseIE):
 
         part_id = int_or_none(parse_qs(url).get('p', [None])[-1])
         if is_anthology and not part_id and self._yes_playlist(video_id, video_id):
-            return self.playlist_from_matches(
-                page_list_json, video_id, title, ie=BiliBiliIE,
-                getter=lambda entry: f'https://www.bilibili.com/video/{video_id}?p={entry["page"]}')
+            return self.playlist_result((
+                self.url_result(f'https://www.bilibili.com/video/{video_id}?p={entry["page"]}', BiliBiliIE, None, title + f' p{entry["page"]:02d} {traverse_obj(entry, "part") or ""}')
+                for entry in page_list_json), video_id)  # piaylisttitle
 
         if is_anthology:
             part_id = part_id or 1
@@ -1362,9 +1391,9 @@ class BilibiliSpaceVideoIE(BilibiliSpaceBaseIE):
                     # hidden-mode collection doesn't show its videos in uploads; extract as playlist instead
                     yield self.url_result(
                         f'https://space.bilibili.com/{entry["mid"]}/lists/{entry["meta"]["id"]}?type=season',
-                        BilibiliCollectionListIE, f'{entry["mid"]}_{entry["meta"]["id"]}')
+                        BilibiliCollectionListIE, f'{entry["mid"]}_{entry["meta"]["id"]}', entry.get('meta', {}).get('title'))
                 else:
-                    yield self.url_result(f'https://www.bilibili.com/video/{entry["bvid"]}', BiliBiliIE, entry['bvid'])
+                    yield self.url_result(f'https://www.bilibili.com/video/{entry["bvid"]}', BiliBiliIE, entry['bvid'], entry['title'])  # videotitle
 
         _, paged_list = self._extract_playlist(fetch_page, get_metadata, get_entries)
         return self.playlist_result(paged_list, playlist_id)
@@ -1398,7 +1427,7 @@ class BilibiliSpaceAudioIE(BilibiliSpaceBaseIE):
         def get_entries(page_data):
             # data is None when the playlist is empty
             for entry in page_data.get('data') or []:
-                yield self.url_result(f'https://www.bilibili.com/audio/au{entry["id"]}', BilibiliAudioIE, entry['id'])
+                yield self.url_result(f'https://www.bilibili.com/audio/au{entry["id"]}', BilibiliAudioIE, entry['id'], entry['title'])  # videotitle
 
         _, paged_list = self._extract_playlist(fetch_page, get_metadata, get_entries)
         return self.playlist_result(paged_list, playlist_id)
@@ -1477,7 +1506,8 @@ class BilibiliCollectionListIE(BilibiliSpaceListBaseIE):
             }
 
         def get_entries(page_data):
-            return self._get_entries(page_data, 'archives')
+            for entry in traverse_obj(page_data, ('archives')) or []:
+                yield self.url_result(f'https://www.bilibili.com/video/{entry["bvid"]}', BiliBiliIE, entry['bvid'], entry['title'])  # videotitle
 
         metadata, paged_list = self._extract_playlist(fetch_page, get_metadata, get_entries)
         return self.playlist_result(paged_list, playlist_id, **metadata)
@@ -1537,7 +1567,8 @@ class BilibiliSeriesListIE(BilibiliSpaceListBaseIE):
             }
 
         def get_entries(page_data):
-            return self._get_entries(page_data, 'archives')
+            for entry in traverse_obj(page_data, ('archives')) or []:
+                yield self.url_result(f'https://www.bilibili.com/video/{entry["bvid"]}', BiliBiliIE, entry['bvid'], entry['title'])  # videotitle
 
         metadata, paged_list = self._extract_playlist(fetch_page, get_metadata, get_entries)
         return self.playlist_result(paged_list, playlist_id, **metadata)
@@ -1576,10 +1607,26 @@ class BilibiliFavoritesListIE(BilibiliSpaceListBaseIE):
         if list_info['code'] == -403:
             self.raise_login_required(msg='This is a private favorites list. You need to log in as its owner')
 
-        entries = self._get_entries(self._download_json(
-            f'https://api.bilibili.com/x/v3/fav/resource/ids?media_id={fid}',
-            fid, note='Download favlist entries'), 'data')
-
+        # 直接使用分页API获取所有条目并提取标题
+        entries = []
+        page_num = 1
+        has_more = True
+        while has_more:
+            page_data = self._download_json(
+                'https://api.bilibili.com/x/v3/fav/resource/list',
+                fid, note=f'Downloading favlist page {page_num}',
+                query={'media_id': fid, 'pn': page_num, 'ps': 20})
+            if page_data.get('code') != 0:
+                break
+            for media in traverse_obj(page_data, ('data', 'medias', ...)) or []:
+                if media.get('bvid'):
+                    entries.append(self.url_result(
+                        f'https://www.bilibili.com/video/{media["bvid"]}',
+                        BiliBiliIE.ie_key(),
+                        media['bvid'],
+                        media.get('title')))  # videotitle
+            has_more = page_data.get('data', {}).get('has_more', False)
+            page_num += 1
         return self.playlist_result(entries, fid, **traverse_obj(list_info, ('data', 'info', {
             'title': ('title', {str}),
             'description': ('intro', {str}),
@@ -1611,7 +1658,7 @@ class BilibiliWatchlaterIE(BilibiliSpaceListBaseIE):
             'https://api.bilibili.com/x/v2/history/toview/web?jsonp=jsonp', list_id)
         if watchlater_info['code'] == -101:
             self.raise_login_required(msg='You need to login to access your watchlater list')
-        entries = self._get_entries(watchlater_info, ('data', 'list'))
+        entries = [self.url_result(f'https://www.bilibili.com/video/av{video["aid"]}', BiliBiliIE, str(video['aid']), video.get('title')) for video in watchlater_info['data']['list']]  # videotitle
         return self.playlist_result(entries, id=list_id, title='稍后再看')
 
 
@@ -1773,7 +1820,7 @@ class BilibiliCategoryIE(InfoExtractor):
 
         for video in video_list:
             yield self.url_result(
-                'https://www.bilibili.com/video/{}'.format(video['bvid']), 'BiliBili', video['bvid'])
+                'https://www.bilibili.com/video/{}'.format(video['bvid']), 'BiliBili', video['bvid'], video['title'])  # videotitle
 
     def _entries(self, category, subcategory, query):
         # map of categories : subcategories : RIDs
@@ -1867,7 +1914,7 @@ class BiliBiliSearchIE(SearchInfoExtractor):
             if not videos:
                 break
             for video in videos:
-                yield self.url_result(video['arcurl'], 'BiliBili', str(video['aid']))
+                yield self.url_result(video['arcurl'], 'BiliBili', str(video['aid']), video['title'])  # videotitle
 
 
 class BilibiliAudioBaseIE(InfoExtractor):
@@ -1974,7 +2021,7 @@ class BilibiliAudioAlbumIE(BilibiliAudioBaseIE):
                 continue
             entries.append(self.url_result(
                 'https://www.bilibili.com/audio/au' + sid,
-                BilibiliAudioIE.ie_key(), sid))
+                BilibiliAudioIE.ie_key(), sid, song['title']))  # videotitle
 
         if entries:
             album_data = self._call_api('menu/info', am_id) or {}
