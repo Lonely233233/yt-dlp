@@ -4,6 +4,19 @@
 # To create a release, dispatch the https://github.com/yt-dlp/yt-dlp/actions/workflows/release.yml workflow on master
 -->
 
+### 2026.03.28.085309
+
+#### Core changes
+- [Merge branch 'yt-dlp:master' into master](https://github.com/yt-dlp/yt-dlp/commit/bae4e63d0085d6c135ea93a0c679c054a2d53829) by [pukkandan](https://github.com/pukkandan)
+- [Merge branch 'yt-dlp:master' into master](https://github.com/yt-dlp/yt-dlp/commit/8f7b6afef3bf25f66039ea6acd80eee17295c87f) by [pukkandan](https://github.com/pukkandan)
+- [Merge branch 'yt-dlp:master' into master](https://github.com/yt-dlp/yt-dlp/commit/c4a9396ba245c6d90538570846fd1242e76b208a) by [pukkandan](https://github.com/pukkandan)
+
+#### Extractor changes
+- **rtp**: [Support multi-part episodes and `--no-playlist`](https://github.com/yt-dlp/yt-dlp/commit/f01e1a1ced581c13f28c7da45eb6396cb9fff6e4) ([#16299](https://github.com/yt-dlp/yt-dlp/issues/16299)) by [bashonly](https://github.com/bashonly)
+
+#### Misc. changes
+- **build**: [Harden build/release workflows](https://github.com/yt-dlp/yt-dlp/commit/87eaf886f5a1fed00639baf3677ac76281cd98f9) ([#16358](https://github.com/yt-dlp/yt-dlp/issues/16358)) by [bashonly](https://github.com/bashonly), [Grub4K](https://github.com/Grub4K)
+
 ### 2026.03.17
 
 #### Extractor changes
