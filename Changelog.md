@@ -4,6 +4,28 @@
 # To create a release, dispatch the https://github.com/yt-dlp/yt-dlp/actions/workflows/release.yml workflow on master
 -->
 
+### 2026.04.05.025359
+
+#### Core changes
+- [Fix `default` extra for `ios` platforms](https://github.com/yt-dlp/yt-dlp/commit/a5aae189452d11ca731a4fb409d0136c668bd7c6) ([#16376](https://github.com/yt-dlp/yt-dlp/issues/16376)) by [bashonly](https://github.com/bashonly)
+- [Merge branch 'yt-dlp:master' into master](https://github.com/yt-dlp/yt-dlp/commit/bae4e63d0085d6c135ea93a0c679c054a2d53829) by [pukkandan](https://github.com/pukkandan)
+- [Merge branch 'yt-dlp:master' into master](https://github.com/yt-dlp/yt-dlp/commit/8f7b6afef3bf25f66039ea6acd80eee17295c87f) by [pukkandan](https://github.com/pukkandan)
+- [Merge branch 'yt-dlp:master' into master](https://github.com/yt-dlp/yt-dlp/commit/c4a9396ba245c6d90538570846fd1242e76b208a) by [pukkandan](https://github.com/pukkandan)
+- [Merge branch 'yt-dlp:master' into master](https://github.com/yt-dlp/yt-dlp/commit/3032d69e4a93a3c5d80b5c574dc7fd455668e8a7) by [pukkandan](https://github.com/pukkandan)
+- **update**: [Bump GitHub REST API version to `2026-03-10`](https://github.com/yt-dlp/yt-dlp/commit/fe5e67c0545a4aac9d404b220c21ba53d1048353) ([#16435](https://github.com/yt-dlp/yt-dlp/issues/16435)) by [bashonly](https://github.com/bashonly)
+
+#### Extractor changes
+- **bandcamp**: weekly: [Fix extractor](https://github.com/yt-dlp/yt-dlp/commit/2d7b278666bfbf12cf287072498dd275c946b968) ([#16373](https://github.com/yt-dlp/yt-dlp/issues/16373)) by [bashonly](https://github.com/bashonly)
+- **rtp**: [Support multi-part episodes and `--no-playlist`](https://github.com/yt-dlp/yt-dlp/commit/f01e1a1ced581c13f28c7da45eb6396cb9fff6e4) ([#16299](https://github.com/yt-dlp/yt-dlp/issues/16299)) by [bashonly](https://github.com/bashonly)
+
+#### Networking changes
+- **Request Handler**: curl_cffi: [Support `curl_cffi` 0.15.x](https://github.com/yt-dlp/yt-dlp/commit/0f45ecc920f31c3c5704c62bad8da2e2844ff9bc) ([#16429](https://github.com/yt-dlp/yt-dlp/issues/16429)) by [bashonly](https://github.com/bashonly)
+
+#### Misc. changes
+- **build**: [Harden build/release workflows](https://github.com/yt-dlp/yt-dlp/commit/87eaf886f5a1fed00639baf3677ac76281cd98f9) ([#16358](https://github.com/yt-dlp/yt-dlp/issues/16358)) by [bashonly](https://github.com/bashonly), [Grub4K](https://github.com/Grub4K) (With fixes in [cdc465a](https://github.com/yt-dlp/yt-dlp/commit/cdc465a34674d15edf52b656457f6006b9e03edf) by [bashonly](https://github.com/bashonly))
+- **devscripts**: [Handle `ejs` updates for requirements files](https://github.com/yt-dlp/yt-dlp/commit/fcccbc68496d8af1b7c24cd5e45e83af4ca76f18) ([#16374](https://github.com/yt-dlp/yt-dlp/issues/16374)) by [bashonly](https://github.com/bashonly), [Grub4K](https://github.com/Grub4K)
+- **test**: [Add default and curl-cffi extras to hatch-test env](https://github.com/yt-dlp/yt-dlp/commit/f14d2f2d548a45fef221aa3821e5a1bf450d5c0b) ([#16397](https://github.com/yt-dlp/yt-dlp/issues/16397)) by [JSubelj](https://github.com/JSubelj)
+
 ### 2026.03.17
 
 #### Extractor changes
