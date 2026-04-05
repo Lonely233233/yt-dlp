@@ -47,8 +47,8 @@ dependencies = []
 
 [project.optional-dependencies]
 default = [
-    "brotli; implementation_name=='cpython'",
-    "brotlicffi; implementation_name!='cpython'",
+    "brotli; implementation_name=='cpython' and sys_platform!='ios'",
+    "brotlicffi; implementation_name!='cpython' and sys_platform!='ios'",
     "certifi",
     "mutagen",
     "pycryptodomex",
@@ -58,10 +58,7 @@ default = [
     "yt-dlp-ejs==0.8.0",
 ]
 curl-cffi = [
-    "curl-cffi>=0.5.10,!=0.6.*,!=0.7.*,!=0.8.*,!=0.9.*,<0.15; implementation_name=='cpython'",
-]
-curl-cffi-compat = [
-    "curl-cffi==0.13.0",
+    "curl-cffi>=0.5.10,!=0.6.*,!=0.7.*,!=0.8.*,!=0.9.*,<0.16; implementation_name=='cpython'",
 ]
 secretstorage = [
     "secretstorage",
@@ -93,7 +90,7 @@ pyinstaller = [
     "pyinstaller>=6.17.0",  # 6.17.0+ needed for compat with setuptools 81+
 ]
 delocate = [
-    "delocate==0.11.0",  # API changed in >0.11
+    "delocate",
 ]
 
 [project.urls]
@@ -178,6 +175,10 @@ lint-check = "ruff check {args:.}"
 lint-fix = "ruff check --fix {args:.}"
 
 [tool.hatch.envs.hatch-test]
+features = [
+    "curl-cffi",
+    "default",
+]
 dependency-groups = [
     "test",
 ]
